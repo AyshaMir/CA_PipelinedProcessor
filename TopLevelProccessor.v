@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
-module TopLevelProcessor(
+
+module TopLevelProccessor(
     input clk,
     input rst
 );
@@ -18,7 +19,7 @@ module TopLevelProcessor(
     wire [6:0] opcode;
     wire [4:0] rs1, rs2, rd;
     wire [2:0] funct3;
-    wire       funct7_5;
+    wire funct7_5;
 
     // ID control
     wire RegWrite_ID, ALUSrc_ID, MemRead_ID, MemWrite_ID, MemtoReg_ID, Branch_ID;
@@ -38,22 +39,22 @@ module TopLevelProcessor(
     wire [31:0] PC_EX, ReadData1_EX, ReadData2_EX, Imm_EX;
     wire [4:0] rs1_EX, rs2_EX, rd_EX;
     wire [2:0] funct3_EX;
-    wire       funct7_5_EX;
+    wire funct7_5_EX;
 
     // Forwarding
     wire [1:0] ForwardA, ForwardB;
     wire [31:0] ForwardedA, ForwardedB;
 
     // EX stage
-    wire [3:0]  ALUControl_EX;
+    wire [3:0] ALUControl_EX;
     wire [31:0] ALU_B_input, ALUResult_EX;
-    wire Zero_EX, Sign_EX;
+    wire Zero_EX, Sign_EX, Less_EX;
     wire [31:0] BranchTarget_EX;
 
     // EX/MEM
     wire RegWrite_MEM, MemRead_MEM, MemWrite_MEM, MemtoReg_MEM, Branch_MEM;
     wire [1:0] BranchType_MEM;
-    wire Zero_MEM, Sign_MEM;
+    wire Zero_MEM, Sign_MEM, Less_MEM;
     wire [31:0] BranchTarget_MEM, ALUResult_MEM, WriteData_MEM;
     wire [4:0] rd_MEM;
 
@@ -71,10 +72,13 @@ module TopLevelProcessor(
     // WB
     wire [31:0] WriteBackData;
 
+    // Branch type encoding
+    localparam BR_BEQ = 2'b00;
+    localparam BR_BGE = 2'b01;
+
     // =========================
     // IF stage
     // =========================
-
     ProgramCounter pc_reg (
         .clk(clk),
         .rst(rst),
@@ -103,7 +107,6 @@ module TopLevelProcessor(
     // =========================
     // IF/ID
     // =========================
-
     IF_ID if_id (
         .clk(clk),
         .rst(rst),
@@ -118,7 +121,6 @@ module TopLevelProcessor(
     // =========================
     // ID stage
     // =========================
-
     assign opcode   = ID_instruction[6:0];
     assign rd       = ID_instruction[11:7];
     assign funct3   = ID_instruction[14:12];
@@ -168,7 +170,6 @@ module TopLevelProcessor(
     // =========================
     // ID/EX
     // =========================
-
     ID_EX id_ex (
         .clk(clk),
         .rst(rst),
@@ -216,7 +217,6 @@ module TopLevelProcessor(
     // =========================
     // EX stage
     // =========================
-
     ForwardingUnit fwd (
         .ID_EX_rs1(rs1_EX),
         .ID_EX_rs2(rs2_EX),
@@ -264,7 +264,8 @@ module TopLevelProcessor(
         .ALUControl(ALUControl_EX),
         .ALUResult(ALUResult_EX),
         .Zero(Zero_EX),
-        .Sign(Sign_EX)
+        .Sign(Sign_EX),
+        .Less(Less_EX)
     );
 
     BranchAdder badd (
@@ -276,7 +277,6 @@ module TopLevelProcessor(
     // =========================
     // EX/MEM
     // =========================
-
     EX_MEM ex_mem (
         .clk(clk),
         .rst(rst),
@@ -289,6 +289,7 @@ module TopLevelProcessor(
         .BranchType_in(BranchType_EX),
         .Zero_in(Zero_EX),
         .Sign_in(Sign_EX),
+        .Less_in(Less_EX),
 
         .BranchTarget_in(BranchTarget_EX),
         .ALUResult_in(ALUResult_EX),
@@ -303,6 +304,7 @@ module TopLevelProcessor(
         .BranchType(BranchType_MEM),
         .Zero(Zero_MEM),
         .Sign(Sign_MEM),
+        .Less(Less_MEM),
 
         .BranchTarget(BranchTarget_MEM),
         .ALUResult(ALUResult_MEM),
@@ -310,16 +312,15 @@ module TopLevelProcessor(
         .rd(rd_MEM)
     );
 
-    // BEQ = BranchType 00
-    // BGE = BranchType 01
+    // BEQ = 00
+    // BGE = 01
     assign branch_taken =
-        (Branch_MEM && (BranchType_MEM == 2'b00) && Zero_MEM) ||
-        (Branch_MEM && (BranchType_MEM == 2'b01) && !Sign_MEM);
+           (Branch_MEM && (BranchType_MEM == BR_BEQ) &&  Zero_MEM)
+        || (Branch_MEM && (BranchType_MEM == BR_BGE) && !Less_MEM);
 
     // =========================
     // MEM stage
     // =========================
-
     datamemory dmem (
         .clk(clk),
         .MemRead(MemRead_MEM),
@@ -332,17 +333,14 @@ module TopLevelProcessor(
     // =========================
     // MEM/WB
     // =========================
-
     MEM_WB mem_wb (
         .clk(clk),
         .rst(rst),
-
         .RegWrite_in(RegWrite_MEM),
         .MemtoReg_in(MemtoReg_MEM),
         .ReadData_in(ReadData_MEM),
         .ALUResult_in(ALUResult_MEM),
         .rd_in(rd_MEM),
-
         .RegWrite(RegWrite_WB),
         .MemtoReg(MemtoReg_WB),
         .ReadData(ReadData_WB),
@@ -353,7 +351,6 @@ module TopLevelProcessor(
     // =========================
     // WB stage
     // =========================
-
     mux2 wb_mux (
         .in0(ALUResult_WB),
         .in1(ReadData_WB),
