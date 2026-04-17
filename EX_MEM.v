@@ -1,6 +1,4 @@
 `timescale 1ns / 1ps
-// EX/MEM Pipeline Register
-// Holds: ALU result + memory control signals between Execute and Memory stages
 module EX_MEM(
     input  clk,
     input  rst,
@@ -11,12 +9,14 @@ module EX_MEM(
     input  MemWrite_in,
     input  MemtoReg_in,
     input  Branch_in,
+    input  [1:0] BranchType_in,
     input  Zero_in,
+    input  Sign_in,
 
     // Data in
     input  [31:0] BranchTarget_in,
     input  [31:0] ALUResult_in,
-    input  [31:0] WriteData_in,   // rs2 value for SW
+    input  [31:0] WriteData_in,
     input  [4:0]  rd_in,
 
     // Control signals out
@@ -25,7 +25,9 @@ module EX_MEM(
     output reg MemWrite,
     output reg MemtoReg,
     output reg Branch,
+    output reg [1:0] BranchType,
     output reg Zero,
+    output reg Sign,
 
     // Data out
     output reg [31:0] BranchTarget,
@@ -33,6 +35,7 @@ module EX_MEM(
     output reg [31:0] WriteData,
     output reg [4:0]  rd
 );
+
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             RegWrite     <= 1'b0;
@@ -40,7 +43,10 @@ module EX_MEM(
             MemWrite     <= 1'b0;
             MemtoReg     <= 1'b0;
             Branch       <= 1'b0;
+            BranchType   <= 2'b00;
             Zero         <= 1'b0;
+            Sign         <= 1'b0;
+
             BranchTarget <= 32'b0;
             ALUResult    <= 32'b0;
             WriteData    <= 32'b0;
@@ -52,11 +58,15 @@ module EX_MEM(
             MemWrite     <= MemWrite_in;
             MemtoReg     <= MemtoReg_in;
             Branch       <= Branch_in;
+            BranchType   <= BranchType_in;
             Zero         <= Zero_in;
+            Sign         <= Sign_in;
+
             BranchTarget <= BranchTarget_in;
             ALUResult    <= ALUResult_in;
             WriteData    <= WriteData_in;
             rd           <= rd_in;
         end
     end
+
 endmodule
