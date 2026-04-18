@@ -24,7 +24,7 @@ always @(*) begin
     endcase
 end
 
-assign Zero = (A == B);                  // better for BEQ comparisons
+assign Zero = (ALUResult == 32'd0);
 assign Sign = ALUResult[31];             // kept for compatibility/debug
 assign Less = ($signed(A) < $signed(B)); // proper signed comparison
 

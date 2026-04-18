@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module registerFile(
+module registerfile(
     input  clk,
     input  rst,
     input  WriteEnable,
@@ -25,6 +25,11 @@ module registerFile(
         end
     end
 
-    assign readdata1 = (rs1 == 5'b00000) ? 32'b0 : regs[rs1];
-    assign readdata2 = (rs2 == 5'b00000) ? 32'b0 : regs[rs2];
+assign readdata1 = (rs1 == 5'b00000)             ? 32'b0    :
+                   (WriteEnable && rd == rs1)     ? WriteData :
+                   regs[rs1];
+
+assign readdata2 = (rs2 == 5'b00000)             ? 32'b0    :
+                   (WriteEnable && rd == rs2)     ? WriteData :
+                   regs[rs2];
 endmodule

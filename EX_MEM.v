@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
-
 module EX_MEM(
     input clk,
     input rst,
+    input flush,        // <-- ADDED: flush on branch taken
 
     // Control signals in
     input RegWrite_in,
@@ -40,7 +40,7 @@ module EX_MEM(
 );
 
 always @(posedge clk or posedge rst) begin
-    if (rst) begin
+    if (rst || flush) begin
         RegWrite     <= 1'b0;
         MemRead      <= 1'b0;
         MemWrite     <= 1'b0;

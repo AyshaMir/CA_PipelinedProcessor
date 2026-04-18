@@ -77,6 +77,16 @@ module TopLevelProccessor(
     localparam BR_BGE = 2'b01;
 
     // =========================
+    // Branch taken logic
+    // Branch resolves in MEM stage
+    // BGE branches when NOT Less (A >= B)
+    // BEQ branches when Zero
+    // =========================
+    assign branch_taken =
+           (Branch_MEM && (BranchType_MEM == BR_BEQ) &&  Zero_MEM)
+        || (Branch_MEM && (BranchType_MEM == BR_BGE) && !Less_MEM);
+
+    // =========================
     // IF stage
     // =========================
     ProgramCounter pc_reg (
@@ -106,6 +116,8 @@ module TopLevelProccessor(
 
     // =========================
     // IF/ID
+    // Flush on branch taken (branch resolves in MEM,
+    // so instructions in IF, ID, EX are wrong - flush all 3)
     // =========================
     IF_ID if_id (
         .clk(clk),
@@ -141,7 +153,7 @@ module TopLevelProccessor(
         .BranchType(BranchType_ID)
     );
 
-    registerFile rf (
+    registerfile rf (
         .clk(clk),
         .rst(rst),
         .WriteEnable(RegWrite_WB),
@@ -169,6 +181,7 @@ module TopLevelProccessor(
 
     // =========================
     // ID/EX
+    // Flush on load-use hazard OR branch taken
     // =========================
     ID_EX id_ex (
         .clk(clk),
@@ -276,10 +289,13 @@ module TopLevelProccessor(
 
     // =========================
     // EX/MEM
+    // Also flush on branch taken - the instruction
+    // that was in EX when branch resolves must be squashed
     // =========================
     EX_MEM ex_mem (
         .clk(clk),
         .rst(rst),
+        .flush(branch_taken),       // <-- KEY FIX
 
         .RegWrite_in(RegWrite_EX),
         .MemRead_in(MemRead_EX),
@@ -311,12 +327,6 @@ module TopLevelProccessor(
         .WriteData(WriteData_MEM),
         .rd(rd_MEM)
     );
-
-    // BEQ = 00
-    // BGE = 01
-    assign branch_taken =
-           (Branch_MEM && (BranchType_MEM == BR_BEQ) &&  Zero_MEM)
-        || (Branch_MEM && (BranchType_MEM == BR_BGE) && !Less_MEM);
 
     // =========================
     // MEM stage
