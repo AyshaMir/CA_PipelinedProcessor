@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
-// MEM/WB Pipeline Register
-// Holds: memory read data or ALU result between Memory and Writeback stages
+// Holds memory read data or ALU result between Memory and Writeback stages
 module MEM_WB(
     input  clk,
     input  rst,

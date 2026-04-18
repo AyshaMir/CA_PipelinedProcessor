@@ -25,11 +25,6 @@ module registerfile(
         end
     end
 
-assign readdata1 = (rs1 == 5'b00000)             ? 32'b0    :
-                   (WriteEnable && rd == rs1)     ? WriteData :
-                   regs[rs1];
-
-assign readdata2 = (rs2 == 5'b00000)             ? 32'b0    :
-                   (WriteEnable && rd == rs2)     ? WriteData :
-                   regs[rs2];
+assign readdata1 = (rs1 == 5'b00000) ? 32'b0 : (WriteEnable && rd == rs1) ? WriteData : regs[rs1];
+assign readdata2 = (rs2 == 5'b00000) ? 32'b0 : (WriteEnable && rd == rs2) ? WriteData : regs[rs2];
 endmodule

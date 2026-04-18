@@ -1,60 +1,38 @@
 `timescale 1ns / 1ps
-// ============================================================
-// Testbench - RISC-V 5-Stage Pipelined Processor
-// Assignment 3 - Computer Architecture EE/CS 371/330
-// Habib University
-//
-// Array input:  23, 12, 5, 44, 98, 53, 6, 89, 32, 65
-// Expected out:  5,  6, 12, 23, 32, 44, 53, 65, 89, 98
-// ============================================================
+// Array input:   23, 12, 5, 44, 98, 53, 6, 89, 32, 65
+// Expected out:   5,  6, 12, 23, 32, 44, 53, 65, 89, 98
 module tb_TopLevelProccessor;
-
-    // -------------------------
-    // Clock and Reset
-    // -------------------------
     reg clk;
     reg rst;
-
     always #5 clk = ~clk;
 
-    // -------------------------
-    // DUT
-    // -------------------------
     TopLevelProccessor dut (
         .clk(clk),
         .rst(rst)
     );
 
-    // -------------------------
     // Pipeline stage tracking wires
-    // (visible in waveform window)
-    // -------------------------
-    wire [31:0] PC_wire        = dut.PC;
-    wire [31:0] instr_fetch    = dut.instruction;
-    wire [31:0] ifid_instr     = dut.ID_instruction;
-    wire [31:0] ifid_pc        = dut.ID_PC;
+    wire [31:0] PC_wire = dut.PC;
+    wire [31:0] instr_fetch = dut.instruction;
+    wire [31:0] ifid_instr = dut.ID_instruction;
+    wire [31:0] ifid_pc = dut.ID_PC;
 
-    wire [4:0]  idex_rd        = dut.rd_EX;
-    wire [4:0]  exmem_rd       = dut.rd_MEM;
-    wire [4:0]  memwb_rd       = dut.rd_WB;
+    wire [4:0]  idex_rd = dut.rd_EX;
+    wire [4:0]  exmem_rd = dut.rd_MEM;
+    wire [4:0]  memwb_rd = dut.rd_WB;
 
-    wire        idex_RegWrite  = dut.RegWrite_EX;
-    wire        idex_MemRead   = dut.MemRead_EX;
+    wire idex_RegWrite  = dut.RegWrite_EX;
+    wire idex_MemRead   = dut.MemRead_EX;
 
-    wire        Stall          = dut.stall;
-    wire        Branch_taken   = dut.branch_taken;
+    wire Stall = dut.stall;
+    wire Branch_taken = dut.branch_taken;
 
-    wire [1:0]  ForwardA       = dut.ForwardA;
-    wire [1:0]  ForwardB       = dut.ForwardB;
+    wire [1:0]  ForwardA = dut.ForwardA;
+    wire [1:0]  ForwardB = dut.ForwardB;
 
-    // -------------------------
     // Memory wires
     // Watch all 10 array slots directly in waveform
-    // datamemory: mem[address[8:0]]
-    // base = 0x100 = 256, each word = 4 bytes
-    // BUT indexed by byte address directly:
-    // arr[0] = mem[256], arr[1] = mem[257] ... arr[9] = mem[265]
-    // -------------------------
+    // datamemory uses byte-addressed indexing in this setup
     wire [31:0] mem_0 = dut.dmem.mem[256];
     wire [31:0] mem_1 = dut.dmem.mem[260];
     wire [31:0] mem_2 = dut.dmem.mem[264];
@@ -66,11 +44,8 @@ module tb_TopLevelProccessor;
     wire [31:0] mem_8 = dut.dmem.mem[288];
     wire [31:0] mem_9 = dut.dmem.mem[292];
 
-    // -------------------------
     // Print array task
-    // -------------------------
     integer i;
-
     task print_array;
         input [31:0] cycle_num;
         begin
@@ -81,20 +56,17 @@ module tb_TopLevelProccessor;
                 $display("  [%0d]   | 0x%0h | %0d",
                     i,
                     256 + (i * 4),
-                    dut.dmem.mem[256 + i]
+                    dut.dmem.mem[256 + (i * 4)]
                 );
             end
             $display("----------------------------------------------");
         end
     endtask
 
-    // -------------------------
     // Main simulation
-    // -------------------------
     initial begin
         clk = 0;
         rst = 1;
-
         @(posedge clk); #1;
         @(posedge clk); #1;
         @(posedge clk); #1;
@@ -102,7 +74,7 @@ module tb_TopLevelProccessor;
 
         $display("==============================================");
         $display("  RISC-V Pipelined Processor - Bubble Sort   ");
-        $display("  Assignment 3 | Habib University            ");
+        $display("  Assignment 3            ");
         $display("==============================================");
 
         repeat(30) @(posedge clk);
@@ -131,11 +103,11 @@ module tb_TopLevelProccessor;
             expected[8] = 89;  expected[9] = 98;
 
             for (i = 0; i < 10; i = i + 1) begin
-                if (dut.dmem.mem[256 + i] === expected[i])
-                    $display("  arr[%0d] = %0d  CORRECT", i, dut.dmem.mem[256 + i]);
+                if (dut.dmem.mem[256 + (i * 4)] === expected[i])
+                    $display("  arr[%0d] = %0d  CORRECT", i, dut.dmem.mem[256 + (i * 4)]);
                 else
                     $display("  arr[%0d] = %0d  WRONG (expected %0d)",
-                        i, dut.dmem.mem[256 + i], expected[i]);
+                        i, dut.dmem.mem[256 + (i * 4)], expected[i]);
             end
         end
 
@@ -144,18 +116,10 @@ module tb_TopLevelProccessor;
         $display("==============================================");
         $finish;
     end
-
-    // -------------------------
-    // Waveform dump
-    // -------------------------
     initial begin
         $dumpfile("pipeline_sim.vcd");
         $dumpvars(0, tb_TopLevelProccessor);
     end
-
-    // -------------------------
-    // Timeout watchdog
-    // -------------------------
     initial begin
         #100000;
         $display("TIMEOUT - simulation exceeded 100000ns");

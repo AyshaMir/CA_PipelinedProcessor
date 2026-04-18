@@ -25,7 +25,7 @@ always @(*) begin
 end
 
 assign Zero = (ALUResult == 32'd0);
-assign Sign = ALUResult[31];             // kept for compatibility/debug
-assign Less = ($signed(A) < $signed(B)); // proper signed comparison
+assign Sign = ALUResult[31]; 
+assign Less = ($signed(A) < $signed(B));
 
 endmodule

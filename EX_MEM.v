@@ -2,7 +2,7 @@
 module EX_MEM(
     input clk,
     input rst,
-    input flush,        // <-- ADDED: flush on branch taken
+    input flush,
 
     // Control signals in
     input RegWrite_in,

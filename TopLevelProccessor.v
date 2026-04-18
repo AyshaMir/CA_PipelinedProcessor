@@ -4,11 +4,6 @@ module TopLevelProccessor(
     input clk,
     input rst
 );
-
-    // =========================
-    // Wires
-    // =========================
-
     // IF stage
     wire [31:0] PC, PC_next, PC_plus4, instruction;
 
@@ -76,19 +71,14 @@ module TopLevelProccessor(
     localparam BR_BEQ = 2'b00;
     localparam BR_BGE = 2'b01;
 
-    // =========================
-    // Branch taken logic
-    // Branch resolves in MEM stage
+    // Branch taken logic, Branch resolves in MEM stage
     // BGE branches when NOT Less (A >= B)
     // BEQ branches when Zero
-    // =========================
     assign branch_taken =
            (Branch_MEM && (BranchType_MEM == BR_BEQ) &&  Zero_MEM)
         || (Branch_MEM && (BranchType_MEM == BR_BGE) && !Less_MEM);
 
-    // =========================
     // IF stage
-    // =========================
     ProgramCounter pc_reg (
         .clk(clk),
         .rst(rst),
@@ -97,12 +87,12 @@ module TopLevelProccessor(
         .PC(PC)
     );
 
-    PCAdder pc_add (
+    PCAdder pcadder (
         .PC(PC),
         .PC_add4(PC_plus4)
     );
 
-    InstructionMemory imem (
+    InstructionMemory ins_mem (
         .instAddress(PC),
         .instruction(instruction)
     );
@@ -114,11 +104,9 @@ module TopLevelProccessor(
         .out(PC_next)
     );
 
-    // =========================
     // IF/ID
     // Flush on branch taken (branch resolves in MEM,
     // so instructions in IF, ID, EX are wrong - flush all 3)
-    // =========================
     IF_ID if_id (
         .clk(clk),
         .rst(rst),
@@ -130,17 +118,15 @@ module TopLevelProccessor(
         .ID_Instruction(ID_instruction)
     );
 
-    // =========================
     // ID stage
-    // =========================
-    assign opcode   = ID_instruction[6:0];
-    assign rd       = ID_instruction[11:7];
-    assign funct3   = ID_instruction[14:12];
-    assign rs1      = ID_instruction[19:15];
-    assign rs2      = ID_instruction[24:20];
+    assign opcode= ID_instruction[6:0];
+    assign rd = ID_instruction[11:7];
+    assign funct3  = ID_instruction[14:12];
+    assign rs1 = ID_instruction[19:15];
+    assign rs2  = ID_instruction[24:20];
     assign funct7_5 = ID_instruction[30];
 
-    main_control ctrl (
+    main_control main_ctrl (
         .opcode(opcode),
         .funct3(funct3),
         .RegWrite(RegWrite_ID),
@@ -179,10 +165,8 @@ module TopLevelProccessor(
         .ID_EX_flush(ID_EX_flush_hazard)
     );
 
-    // =========================
     // ID/EX
     // Flush on load-use hazard OR branch taken
-    // =========================
     ID_EX id_ex (
         .clk(clk),
         .rst(rst),
@@ -227,9 +211,7 @@ module TopLevelProccessor(
         .funct7_5(funct7_5_EX)
     );
 
-    // =========================
     // EX stage
-    // =========================
     ForwardingUnit fwd (
         .ID_EX_rs1(rs1_EX),
         .ID_EX_rs2(rs2_EX),
@@ -271,7 +253,7 @@ module TopLevelProccessor(
         .ALUControl(ALUControl_EX)
     );
 
-    alu alu_main (
+    alu alu_unit (
         .A(ForwardedA),
         .B(ALU_B_input),
         .ALUControl(ALUControl_EX),
@@ -281,21 +263,19 @@ module TopLevelProccessor(
         .Less(Less_EX)
     );
 
-    BranchAdder badd (
+    BranchAdder badder (
         .PC(PC_EX),
         .imm(Imm_EX),
         .branchTarget(BranchTarget_EX)
     );
 
-    // =========================
     // EX/MEM
     // Also flush on branch taken - the instruction
     // that was in EX when branch resolves must be squashed
-    // =========================
     EX_MEM ex_mem (
         .clk(clk),
         .rst(rst),
-        .flush(branch_taken),       // <-- KEY FIX
+        .flush(branch_taken),
 
         .RegWrite_in(RegWrite_EX),
         .MemRead_in(MemRead_EX),
@@ -328,9 +308,7 @@ module TopLevelProccessor(
         .rd(rd_MEM)
     );
 
-    // =========================
     // MEM stage
-    // =========================
     datamemory dmem (
         .clk(clk),
         .MemRead(MemRead_MEM),
@@ -340,9 +318,7 @@ module TopLevelProccessor(
         .read_data(ReadData_MEM)
     );
 
-    // =========================
     // MEM/WB
-    // =========================
     MEM_WB mem_wb (
         .clk(clk),
         .rst(rst),
@@ -358,9 +334,7 @@ module TopLevelProccessor(
         .rd(rd_WB)
     );
 
-    // =========================
     // WB stage
-    // =========================
     mux2 wb_mux (
         .in0(ALUResult_WB),
         .in1(ReadData_WB),

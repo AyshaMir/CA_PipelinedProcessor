@@ -7,9 +7,9 @@ module alu_control(
 );
     always @(*) begin
         case (ALUOp)
-            2'b00: ALUControl = 4'b0010;   // ADD  (LOAD / STORE address calc)
+            2'b00: ALUControl = 4'b0010;   // ADD 
 
-            2'b01: ALUControl = 4'b0110;   // SUB  (BRANCH comparison)
+            2'b01: ALUControl = 4'b0110;   // SUB 
 
             2'b10: begin                   // R-type
                 case (funct3)

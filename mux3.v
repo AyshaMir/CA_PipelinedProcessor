@@ -1,4 +1,3 @@
-// 3-to-1 mux needed by forwarding unit to select ALU inputs
 // select: 00 = register file, 01 = MEM/WB forward, 10 = EX/MEM forward
 module mux3(
     input  [31:0] in0,
